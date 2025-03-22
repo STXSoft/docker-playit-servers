@@ -1,0 +1,74 @@
+# MC-Server Volumes
+x-mc-env-args: &mc-env-args
+  EULA: ${EULA}
+  INIT_MEMORY: "2G"
+  MAX_MEMORY: "4G"
+  MODE: "survival"
+  DIFFICULTY: "hard"
+  ICON: "/opt/stxsoft/assets/${ICON_FILE}"
+x-ressource-vol: &rss-vol
+  "./assets:/opt/stxsoft/assets/:ro"
+x-mc-config-vol: &mc-cfg-vol
+  "./config/minecraft:/opt/stxsoft/config:ro"
+x-mc-template: &mc-template
+  build:
+    context: docker/minecraft
+  environment:
+    <<: *mc-env-args
+  restart: unless-stopped
+  volumes:
+    - *rss-vol
+    - *mc-cfg-vol
+
+services:
+  playit:
+    image: ghcr.io/playit-cloud/playit-agent:0.15
+    container_name: playitgg
+    networks:
+      gameserver-net:
+        ipv4_address: 172.30.0.10
+    environment:
+      - SECRET_KEY=${AGENT_SECRET}
+    restart: unless-stopped
+
+  vanilla:
+    <<: *mc-template
+    image: game-servers/mc-vanilla
+    container_name: mc-vanilla
+    environment:
+      <<: *mc-env-args
+      VERSION: "1.21.4"
+      TYPE: "VANILLA"
+    volumes:
+      - *mc-cfg-vol
+      - *rss-vol
+      - ./servers/minecraft/vanilla:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+    networks:
+      gameserver-net:
+        ipv4_address: 172.30.0.11
+
+networks:
+  gameserver-net:
+    name: gameserver-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
+#  modded:
+#    image: mc-modded
+#    build:
+#      context: ./servers/modded
+#    container_name: mc-modded
+#    ports:
+#      - "25566:25565"
+#    volumes:
+#      - ./servers/modded/data:/data
+#    environment:
+#      EULA: "TRUE"
+#      VERSION: "1.20.4"
+#    restart: unless-stopped
+
