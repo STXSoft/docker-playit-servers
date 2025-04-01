@@ -5,7 +5,9 @@ x-mc-env-args: &mc-env-args
   MAX_MEMORY: "4G"
   MODE: "survival"
   DIFFICULTY: "hard"
+  RCON_PASSWORD: ${RCON_PASSWORD}
   ICON: "/opt/stxsoft/assets/${ICON_FILE}"
+  CUSTOM_CONFIG: "server.properties.default"
 x-ressource-vol: &rss-vol
   "./assets:/opt/stxsoft/assets/:ro"
 x-mc-config-vol: &mc-cfg-vol
@@ -19,6 +21,14 @@ x-mc-template: &mc-template
   volumes:
     - *rss-vol
     - *mc-cfg-vol
+
+networks:
+  gameserver-net:
+    name: gameserver-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
 
 services:
   playit:
@@ -39,6 +49,7 @@ services:
       <<: *mc-env-args
       VERSION: "1.21.4"
       TYPE: "VANILLA"
+      SEED: "42"
     volumes:
       - *mc-cfg-vol
       - *rss-vol
@@ -51,13 +62,6 @@ services:
       gameserver-net:
         ipv4_address: 172.30.0.11
 
-networks:
-  gameserver-net:
-    name: gameserver-net
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.30.0.0/16
 #  modded:
 #    image: mc-modded
 #    build:

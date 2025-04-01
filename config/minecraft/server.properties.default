@@ -42,7 +42,11 @@ prevent-proxy-connections=false
 pvp=true
 query.port=25565
 rate-limit=0
-rcon.password=41ae946522377c4f987c4381
+
+# Use .env and docker-compose.yml to change rcon password.
+# Any changes here will be overridden
+rcon.password=
+
 rcon.port=25575
 region-file-compression=deflate
 require-resource-pack=false
