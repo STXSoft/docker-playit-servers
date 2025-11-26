@@ -30,7 +30,7 @@ x-resource-vol: &resource-vol
 # Target path for Minecraft server configuration file
 # Do not change this unless you know what you're doing!
 x-mc-cfg-target: &mc-cfg-target
-  "/data/server.properties"
+  "/server.properties"
 
 # Template for Minecraft services to reduce redundancy
 x-mc-template: &mc-template
