@@ -1,9 +1,13 @@
 #-------------------------------------------------#
 # Docker Compose configuration for Gaming Servers #
-#-------------------------------------------------#
+#-------------------------------------------------#---------------------------------------------#
+# The following are yaml anchors which are used to reduce redundancy                            #
+# and simplify configuration across multiple services by defining common settings in one place. #
+#-----------------------------------------------------------------------------------------------#
 
-# The following are the default minecraft server variables used across multiple services.
-# You can override them in each service if needed. For an example, see the `mc-vanilla` service below.
+# Anchors for common Minecraft environment variables. Adjust as needed.
+x-mc-default-config: &mc-default-config
+  ./config/minecraft/${MC_DEFAULT_CONFIG:-server.properties.default}
 x-mc-env-args: &mc-env-args
   EULA: ${EULA}
   INIT_MEMORY: "2G"
@@ -12,11 +16,46 @@ x-mc-env-args: &mc-env-args
   DIFFICULTY: "hard"
   RCON_PASSWORD: ${RCON_PASSWORD}  # Ensure this is set in your .env file. DO NOT PASTE YOUR PASSWORD DIRECTLY HERE.
   ICON: /opt/stxsoft/assets/${ICON_FILE:-stxsoft/icon.png}
-  CUSTOM_CONFIG: ${MC_DEFAULT_CONFIG:-server.properties.default}
 
+
+#-----------------------------------------------------------------------------------#
+# Do not remove or edit the following anchors!                                      #
+# They are used in multiple places below and are necessary for proper configuration #
+#-----------------------------------------------------------------------------------#
+
+# Volume mapping for shared static resources (icons, etc)
+x-resource-vol: &resource-vol
+  "./assets:/opt/stxsoft/assets/:ro"
+
+# Target path for Minecraft server configuration file
+# Do not change this unless you know what you're doing!
+x-mc-cfg-target: &mc-cfg-target
+  "/data/server.properties"
+
+# Template for Minecraft services to reduce redundancy
+x-mc-template: &mc-template
+  build:
+    context: docker/minecraft
+  environment:
+    <<: *mc-env-args
+  configs:
+    - source: mc-vanilla-cfg
+      target: *mc-cfg-target
+  restart: unless-stopped
+  volumes:
+    - *resource-vol
+
+
+#-----------------------------------#
+# Main Docker Compose Configuration #
+#-----------------------------------#
+
+# Configuration files for Minecraft servers
+# Create your custom server.properties files in the ./config/minecraft/ folder
+# and reference them here. You can reference them when defining each server below.
 configs:
   mc-vanilla-cfg:
-    file: ./config/minecraft/server.properties.default
+    file: *mc-default-config
 
 services:
   # Playit.gg agent for tunneling
@@ -91,30 +130,3 @@ networks:
     ipam:
       config:
         - subnet: 172.30.0.0/16  # Custom subnet to avoid conflicts (Adjust as needed, ensure it doesn't overlap with existing networks on your host)
-
-
-#-----------------------------------------------------------------------------------#
-# Do not remove or edit these anchors!                                              #
-# They are used in multiple places above and are necessary for proper configuration #
-#-----------------------------------------------------------------------------------#
-# Volume mapping for shared static resources (icons, etc)
-x-resource-vol: &resource-vol
-  "./assets:/opt/stxsoft/assets/:ro"
-
-# Target path for Minecraft server configuration file
-# Do not change this unless you know what you're doing!
-x-mc-cfg-target: &mc-cfg-target
-  "/data/server.properties"
-
-# Template for Minecraft services to reduce redundancy
-x-mc-template: &mc-template
-  build:
-    context: docker/minecraft
-  environment:
-    <<: *mc-env-args
-  configs:
-    - source: mc-vanilla-cfg
-      target: *mc-cfg-target
-  restart: unless-stopped
-  volumes:
-    - *resource-vol
