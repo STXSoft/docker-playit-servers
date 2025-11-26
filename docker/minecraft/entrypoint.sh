@@ -1,14 +1,18 @@
 #!/bin/bash
-if [ -n "${CUSTOM_CONFIG}" ]; then
-    echo "CUSTOM_CONFIG is set"
-    if [ -f "/opt/stxsoft/config/${CUSTOM_CONFIG}" ]; then
-        echo "🔧 Copying custom server config to '/data/server.properties'"
-    	cp "/opt/stxsoft/config/${CUSTOM_CONFIG}" /data/server.properties
-	    chown 1000:1000 /data/server.properties
-    	chmod 644 /data/server.properties
+set -e
+if [ ! -f "/data/CONFIGURED" ]; then
+    echo "First run detected, initializing server configuration..."
+    touch /data/CONFIGURED
+    if [ -f "/server.properties" ]; then
+        echo "Applying custom configuration from /server.properties"
+        cp /server.properties /data/server.properties
+        chown 1000:1000 /data/server.properties
+        chmod 644 /data/server.properties
+    else
+        echo "No custom configuration provided, using default settings."
     fi
 else
-    echo "CUSTOM_CONFIG is not set, server will use default configuration!"
+    echo "Server already configured, skipping initialization."
 fi
 
 exec /start

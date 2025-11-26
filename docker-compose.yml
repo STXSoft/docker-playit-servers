@@ -1,78 +1,120 @@
-# MC-Server Volumes
+#-------------------------------------------------#
+# Docker Compose configuration for Gaming Servers #
+#-------------------------------------------------#
+
+# The following are the default minecraft server variables used across multiple services.
+# You can override them in each service if needed. For an example, see the `mc-vanilla` service below.
 x-mc-env-args: &mc-env-args
   EULA: ${EULA}
   INIT_MEMORY: "2G"
   MAX_MEMORY: "4G"
   MODE: "survival"
   DIFFICULTY: "hard"
-  RCON_PASSWORD: ${RCON_PASSWORD}
-  ICON: "/opt/stxsoft/assets/${ICON_FILE}"
-  CUSTOM_CONFIG: "server.properties.default"
-x-ressource-vol: &rss-vol
-  "./assets:/opt/stxsoft/assets/:ro"
-x-mc-config-vol: &mc-cfg-vol
-  "./config/minecraft:/opt/stxsoft/config:ro"
-x-mc-template: &mc-template
-  build:
-    context: docker/minecraft
-  environment:
-    <<: *mc-env-args
-  restart: unless-stopped
-  volumes:
-    - *rss-vol
-    - *mc-cfg-vol
+  RCON_PASSWORD: ${RCON_PASSWORD}  # Ensure this is set in your .env file. DO NOT PASTE YOUR PASSWORD DIRECTLY HERE.
+  ICON: /opt/stxsoft/assets/${ICON_FILE:-stxsoft/icon.png}
+  CUSTOM_CONFIG: ${MC_DEFAULT_CONFIG:-server.properties.default}
 
+configs:
+  mc-vanilla-cfg:
+    file: ./config/minecraft/server.properties.default
+
+services:
+  # Playit.gg agent for tunneling
+  # Should not need any modifications unless you change the network subnet
+  playit:
+    image: ghcr.io/playit-cloud/playit-agent:0.16
+    networks:
+      gameserver-net:
+        ipv4_address: 172.30.0.2  # Only change if subnet is modified down below due to conflicts
+    environment:
+      - SECRET_KEY=${AGENT_SECRET}  # Ensure this is set in your .env file. DO NOT PASTE YOU SECRET DIRECTLY HERE.
+    restart: unless-stopped
+
+  # Vanilla Minecraft Server
+  # This is where the fun begins!
+  # Modify the environment variables as needed to customize your server.
+  mc-vanilla:
+    <<: *mc-template
+    environment:
+      <<: *mc-env-args
+      VERSION: "1.21.5"
+      TYPE: "VANILLA"
+      SEED: "42"
+      # difficulty: peaceful  # Uncomment to override default difficulty
+    # ports:
+    #   - "25565:25565"  # Uncomment if not using playit.gg or if direct access is needed. This can bypass NAT/firewall restrictions.
+    volumes:
+      - *resource-vol  # Shared assets volume (read-only)
+      - ./servers/minecraft/vanilla:/data  # Minecraft server files volume for persistence across restarts. 
+    configs:
+      - source: mc-vanilla-cfg  # Must match the name under 'configs' at the bottom of this file
+        target: *mc-cfg-target  # Mandatory for the entrypoint script to pick up custom server.properties
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'  # Limit to 4 CPU cores
+          memory: 5G   # Limit to 5GB RAM
+    networks:
+      gameserver-net:
+        ipv4_address: 172.30.0.3  # Static IP for vanilla server within the custom network. Only change if subnet is modified down below due to conflicts
+
+  # Additional game servers can be added here following the same pattern as mc-vanilla.
+  # Ensure to assign unique static IPs within the custom network subnet.
+  # Example for a modded Minecraft server using Forge:
+  # mc-modded:
+  #   <<: *mc-template
+  #   environment:
+  #     <<: *mc-env-args
+  #     VERSION: "1.16.5"
+  #     TYPE: "FORGE"
+  #     FORGE_VERSION: "36.2.0"
+  #     INIT_MEMORY: "4G"
+  #     MAX_MEMORY: "12G"
+  #   volumes:
+  #     - *resource-vol
+  #     - ./servers/minecraft/modded:/data
+  #   networks:
+  #     gameserver-net:
+  #       ipv4_address: 172.30.0.4
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '4.0'
+  #         memory: 12G
+
+
+# Custom network to isolate game servers and playit agent
 networks:
   gameserver-net:
     name: gameserver-net
     driver: bridge
     ipam:
       config:
-        - subnet: 172.30.0.0/16
+        - subnet: 172.30.0.0/16  # Custom subnet to avoid conflicts (Adjust as needed, ensure it doesn't overlap with existing networks on your host)
 
-services:
-  playit:
-    image: ghcr.io/playit-cloud/playit-agent:0.15
-    container_name: playitgg
-    networks:
-      gameserver-net:
-        ipv4_address: 172.30.0.10
-    environment:
-      - SECRET_KEY=${AGENT_SECRET}
-    restart: unless-stopped
 
-  vanilla:
-    <<: *mc-template
-    image: game-servers/mc-vanilla
-    container_name: mc-vanilla
-    environment:
-      <<: *mc-env-args
-      VERSION: "1.21.4"
-      TYPE: "VANILLA"
-      SEED: "42"
-    volumes:
-      - *mc-cfg-vol
-      - *rss-vol
-      - ./servers/minecraft/vanilla:/data
-    deploy:
-      resources:
-        limits:
-          cpus: '4.0'
-    networks:
-      gameserver-net:
-        ipv4_address: 172.30.0.11
+#-----------------------------------------------------------------------------------#
+# Do not remove or edit these anchors!                                              #
+# They are used in multiple places above and are necessary for proper configuration #
+#-----------------------------------------------------------------------------------#
+# Volume mapping for shared static resources (icons, etc)
+x-resource-vol: &resource-vol
+  "./assets:/opt/stxsoft/assets/:ro"
 
-#  modded:
-#    image: mc-modded
-#    build:
-#      context: ./servers/modded
-#    container_name: mc-modded
-#    ports:
-#      - "25566:25565"
-#    volumes:
-#      - ./servers/modded/data:/data
-#    environment:
-#      EULA: "TRUE"
-#      VERSION: "1.20.4"
-#    restart: unless-stopped
+# Target path for Minecraft server configuration file
+# Do not change this unless you know what you're doing!
+x-mc-cfg-target: &mc-cfg-target
+  "/data/server.properties"
 
+# Template for Minecraft services to reduce redundancy
+x-mc-template: &mc-template
+  build:
+    context: docker/minecraft
+  environment:
+    <<: *mc-env-args
+  configs:
+    - source: mc-vanilla-cfg
+      target: *mc-cfg-target
+  restart: unless-stopped
+  volumes:
+    - *resource-vol

@@ -8,19 +8,18 @@ These are ideally **grouped by game**, making it easy to manage multiple servers
 Any data in this folder, except this file, will automatically be ignored by git due to the .gitignore file
 
 ## 📁 Structure
-
+```
 ./<game>/ 
  └── <service-name>/
     ├── world/ 
     ├── server.properties 
     ├── logs/ 
     └── ...
-
+```
 ### ✅ Example
-
-./minecraft/mc-vanilla/ 
-./minecraft/mc-modpack1/ 
-./valheim/valhalla-server/
+- ./minecraft/mc-vanilla/ 
+- ./minecraft/mc-modpack1/ 
+- ./valheim/valhalla-server/
 
 ## 🔒 Notes
 
