@@ -58,8 +58,9 @@ gaming-servers/
 ├── docker-compose.yml    # Main compose file to launch everything
 ```
 
-Services
---------
-- vanilla: Vanilla Minecraft (version configurable via environment). Uses itzg/minecraft-server docker image
-- playit: Tunneling agent for public server access (Playit.gg)
-
+Roadmap
+-------
+- Server creation with initial white- and blacklist files (same as configs are copied right now)
+- Add other games
+- Possibly split `docker-compose.yml` into multiple files and
+use compose to merge them. This should reduce clutter and allow for more organized compose files.

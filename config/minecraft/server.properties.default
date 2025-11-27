@@ -1,5 +1,4 @@
 #Minecraft server properties
-#Sat Mar 22 20:05:44 GMT 2025
 accepts-transfers=false
 allow-flight=false
 allow-nether=true
@@ -24,7 +23,7 @@ hardcore=false
 hide-online-players=false
 initial-disabled-packs=
 initial-enabled-packs=vanilla
-level-name=LOL
+level-name=world
 level-seed=1337
 level-type=minecraft\:normal
 log-ips=true
