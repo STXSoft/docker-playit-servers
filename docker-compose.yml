@@ -107,7 +107,7 @@ services:
     # More info on: https://hub.docker.com/r/lloesche/valheim-server
       - SERVER_NAME=${VALHEIM_SERVER_NAME:-SyntexSoft Valheim Server}
       - WORLD_NAME=${VALHEIM_WORLD_NAME:-STXS World}
-      - PASSWORD=${VALHEIM_PASSWORD}
+      - SERVER_PASS=${VALHEIM_PASSWORD}
       - PUBLIC=${VALHEIM_PUBLIC:-false}
       - PORT=${VALHEIM_PORT:-2456}
     volumes:
@@ -156,6 +156,7 @@ networks:
   gameserver-net:
     name: gameserver-net
     driver: bridge
+    internal: true
     ipam:
       config:
         - subnet: 172.30.0.0/16  # Custom subnet to avoid conflicts (Adjust as needed, ensure it doesn't overlap with existing networks on your host)
