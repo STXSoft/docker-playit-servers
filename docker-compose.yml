@@ -57,6 +57,9 @@ configs:
   mc-vanilla-cfg:
     file: *mc-default-config
 
+volumes:
+  valheim-server:
+
 services:
   # Playit.gg agent for tunneling
   # Should not need any modifications unless you change the network subnet
@@ -97,6 +100,32 @@ services:
       gameserver-net:
         ipv4_address: 172.30.0.3  # Static IP for vanilla server within the custom network. Only change if subnet is modified down below due to conflicts
 
+  valheim:
+    image: lloesche/valheim-server
+    environment:
+    # Customize your Valheim server settings via environment variables
+    # More info on: https://hub.docker.com/r/lloesche/valheim-server
+      - SERVER_NAME=${VALHEIM_SERVER_NAME:-SyntexSoft Valheim Server}
+      - WORLD_NAME=${VALHEIM_WORLD_NAME:-STXS World}
+      - PASSWORD=${VALHEIM_PASSWORD}
+      - PUBLIC=${VALHEIM_PUBLIC:-false}
+      - PORT=${VALHEIM_PORT:-2456}
+    volumes:
+      - ./servers/valheim:/config
+      - valheim-server:/opt/valheim
+    expose:
+      - 2456-2457/udp
+    #   - "${VALHEIM_PORT:-2456}:${VALHEIM_PORT:-2456}/udp"
+    #   - "${VALHEIM_PORT_PLUS_ONE:-2457}:${VALHEIM_PORT_PLUS_ONE:-2457}/udp"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+    networks:
+      gameserver-net:
+        ipv4_address: 172.30.0.4
   # Additional game servers can be added here following the same pattern as mc-vanilla.
   # Ensure to assign unique static IPs within the custom network subnet.
   # Example for a modded Minecraft server using Forge:
@@ -114,7 +143,7 @@ services:
   #     - ./servers/minecraft/modded:/data
   #   networks:
   #     gameserver-net:
-  #       ipv4_address: 172.30.0.4
+  #       ipv4_address: 172.30.0.5
   #   deploy:
   #     resources:
   #       limits:
